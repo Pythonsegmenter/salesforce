@@ -1,14 +1,24 @@
 import json
 import pandas as pd
 from simple_salesforce import Salesforce, SalesforceLogin, SFType
+import basic_functions as bf
+import basic_constants as bc
 
 def check_target_obj_links(data_type):
     """Returns link, link type, obj_label. Does this by checking the target object for look ups & master details"""
     if len(data_type)<6: #No look up or master detail, needed to check for index out of bounds
         return False, False, False
     elif data_type[0:7]=="Lookup(":
+        if (data_type[7:-1] not in bc.selection_list and bc.relate_by_selection): #ignore if not in ignore list and selection mode
+            return False, False, False
+        elif (data_type[7:-1] in bc.ignore_list and not bc.relate_by_selection): #ignore if in ignore list and in ignore mode
+            return False, False, False
         return True, "Lookup", data_type[7:-1]
     elif data_type[0:14]=="Master-Detail(":
+        if (data_type[14:-1] not in bc.selection_list and bc.relate_by_selection): #ignore if not in ignore list and selection mode
+            return False, False, False
+        elif (data_type[14:-1] in bc.ignore_list and not bc.relate_by_selection): #ignore if in ignore list and in ignore mode
+            return False, False, False
         return True, "Master-Detail", data_type[14:-1]
     #No look up or master detail but more then 6 characters
     return False, False, False
@@ -37,21 +47,30 @@ domain = 'login'
 session_id, instance = SalesforceLogin(username=username, password=password, security_token=security_token, domain=domain)
 sf = Salesforce(instance=instance, session_id=session_id)
 
-#Get datafram with all object api names that are customizable (=present in obj manager)
-obj_api_name_and_label = pd.DataFrame(sf.query("SELECT QualifiedApiName, Label FROM EntityDefinition WHERE IsCustomizable=True")['records'])
+#Get dataframewith all object api names that are customizable (=present in obj manager) and present in the selection list or not present in the ignore list.
+if bc.relate_by_selection:
+    select_string = bf.create_SQL_query_string_from_list(
+        bc.selection_list)  # create string of list of objects to ignore for SQL query
+    obj_api_name_and_label = pd.DataFrame(sf.query(
+        "SELECT QualifiedApiName, Label FROM EntityDefinition WHERE IsCustomizable=True AND Label IN " + select_string)[
+                                              'records'])
+else:
+    ignore_string = bf.create_SQL_query_string_from_list(bc.ignore_list) #create string of list of objects to ignore for SQL query
+    obj_api_name_and_label = pd.DataFrame(sf.query("SELECT QualifiedApiName, Label FROM EntityDefinition WHERE IsCustomizable=True AND Label NOT IN "+ignore_string)['records'])
+field_dataframes_dict = bf.create_field_dataframes(obj_api_name_and_label,sf) #a dict with as keys the object labels and as values the dataframes of the objects' fields.
+
 
 #Initialize stat list
 stat_list = [] #counts number of links per obj
 
-stop_index =0
-stop_limit = 5 #Used for testing.
+stop_index =0 #For testing
 
 ## Check for other objects with references to the target object
 #Iterate over the api names of all objects
 for target_label in obj_api_name_and_label.loc[:, "Label"]: #Iterate over the api_names (string types)
 
     #For testing purposes
-    if stop_limit == stop_index:
+    if bc.stop_limit == stop_index:
         break
     stop_index += 1
 
@@ -60,9 +79,7 @@ for target_label in obj_api_name_and_label.loc[:, "Label"]: #Iterate over the ap
 
     ## Check in the target object to what other objects it references
     #Get dataframe with field api names, labels & datatypes
-    field_info = pd.DataFrame(sf.query(
-        "SELECT QualifiedApiName, Label, DataType, Description FROM FieldDefinition WHERE EntityDefinition.Label IN ('"+ target_label +"')")[
-                                'records'])
+    field_info = field_dataframes_dict[target_label]
     for i,field_type in enumerate(field_info.loc[:,"DataType"]):
         link, link_type, obj_label = check_target_obj_links(field_type)
         if link:
@@ -77,9 +94,7 @@ for target_label in obj_api_name_and_label.loc[:, "Label"]: #Iterate over the ap
             continue
 
         #Get dataframe with field api names, labels & datatypes
-        field_info = pd.DataFrame(sf.query(
-            "SELECT QualifiedApiName, Label, DataType, Description FROM FieldDefinition WHERE EntityDefinition.Label IN ('"+ label +"')")[
-                                    'records'])
+        field_info = field_dataframes_dict[label]
         for i,field_type in enumerate(field_info.loc[:,"DataType"]):
             # print(field_type)
             link, link_type, target_obj_match = check_link_non_target_obj(field_type, target_label)

@@ -1,15 +1,8 @@
 # Import pandas library
-import pandas as pd
+import basic_functions as bf
 
-# initialize list of lists
-data = [['tom', 10], ['nick', 15], ['juli', 14]]
-
-# Create the pandas DataFrame
-df = pd.DataFrame(data, columns=['Name', 'Age'])
-
-# print dataframe.
-df
-
+test = ['Account','Contact']
+print(bf.create_SQL_query_string_from_list(test))
 
 
 
