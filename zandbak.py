@@ -1,8 +1,11 @@
 # Import pandas library
 import basic_functions as bf
 
-test = ['Account','Contact']
-print(bf.create_SQL_query_string_from_list(test))
+a = "account/BU"
+print(a.find("/"))
+
+print(a[0:7]+" per "+a[8:])
+print(a.find("z"))
 
 
 

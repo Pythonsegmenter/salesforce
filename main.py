@@ -39,11 +39,11 @@ def check_link_non_target_obj(data_type, target_obj_label):
     return False, False, False
 
 ## Connect with salesforce instance
-loginInfo = json.load(open('login.json'))
+loginInfo = json.load(open('login_uat.json'))
 username = loginInfo['username']
 password = loginInfo['password']
 security_token = loginInfo['security_token']
-domain = 'login'
+domain = 'test'
 session_id, instance = SalesforceLogin(username=username, password=password, security_token=security_token, domain=domain)
 sf = Salesforce(instance=instance, session_id=session_id)
 
@@ -55,8 +55,13 @@ if bc.relate_by_selection:
         "SELECT QualifiedApiName, Label FROM EntityDefinition WHERE IsCustomizable=True AND Label IN " + select_string)[
                                               'records'])
 else:
-    ignore_string = bf.create_SQL_query_string_from_list(bc.ignore_list) #create string of list of objects to ignore for SQL query
-    obj_api_name_and_label = pd.DataFrame(sf.query("SELECT QualifiedApiName, Label FROM EntityDefinition WHERE IsCustomizable=True AND Label NOT IN "+ignore_string)['records'])
+    if len(bc.ignore_list)!=0: #Only do this if there is something to ignore
+        ignore_string = bf.create_SQL_query_string_from_list(bc.ignore_list) #create string of list of objects to ignore for SQL query
+        obj_api_name_and_label = pd.DataFrame(sf.query("SELECT QualifiedApiName, Label FROM EntityDefinition WHERE IsCustomizable=True AND Label NOT IN "+ignore_string)['records'])
+    else:
+        obj_api_name_and_label = pd.DataFrame(sf.query(
+            "SELECT QualifiedApiName, Label FROM EntityDefinition WHERE IsCustomizable=True")[
+                                                  'records'])
 field_dataframes_dict = bf.create_field_dataframes(obj_api_name_and_label,sf) #a dict with as keys the object labels and as values the dataframes of the objects' fields.
 
 
@@ -104,6 +109,12 @@ for target_label in obj_api_name_and_label.loc[:, "Label"]: #Iterate over the ap
     output = pd.DataFrame(link_list, columns=['Source obj', 'Target obj', "Link type", "Field name", "Field description"])
     links_from_other_objects = len(link_list) - links_to_other_objects
     stat_list.append([target_label,output.shape[0], links_to_other_objects, links_from_other_objects]) #add the statistics
+
+    #Avoid annoying / character in the "Account / BU" object.
+    if target_label.find("/")!=-1:
+        annoying_index = target_label.find("/")
+        target_label = target_label[0:annoying_index]+" per "+target_label[annoying_index+1:]
+
     output.to_csv('output/'+target_label+'.csv',index=False) #save the file
 
 stats = pd.DataFrame(stat_list, columns=['obj', 'number of links', 'number of outgoing links', 'number of incoming links'])
