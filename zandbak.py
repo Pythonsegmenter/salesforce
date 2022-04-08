@@ -15,9 +15,13 @@ sf = Salesforce(instance=instance, session_id=session_id)
 
 # obj_info = pd.DataFrame(sf.query(
 #         "SELECT name FROM Account")['records'])
-obj_info = sf.query("SELECT COUNT() FROM Account")
-print(obj_info['totalSize'])
+# obj_info = pd.DataFrame(sf.query(
+#         "SELECT Label, Description FROM EntityDefinition WHERE IsCustomizable=True")[
+#                                               'records'])
+
+obj_info = pd.DataFrame(sf.toolingexecute("query/?q=SELECT+Label,Description+from+EntityDefinition+Where+IsCustomizable=True")['records'])
 print("a")
+
 
 
 

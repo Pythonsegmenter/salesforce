@@ -52,22 +52,27 @@ sf = Salesforce(instance=instance, session_id=session_id)
 if bc.relate_by_selection:
     select_string = bf.create_SQL_query_string_from_list(
         bc.selection_list)  # create string of list of objects to ignore for SQL query
-    obj_info = pd.DataFrame(sf.query(
-        "SELECT "+bc.object_properties+" FROM EntityDefinition WHERE IsCustomizable=True AND Label IN " + select_string)[
-                                              'records'])
+    obj_info = pd.DataFrame(sf.toolingexecute("query/?q=SELECT+"+bc.object_properties+"+from+EntityDefinition+Where+IsCustomizable=True+AND+Label+IN+"+select_string)['records'])
+    # obj_info = pd.DataFrame(sf.query("SELECT "+bc.object_properties+" FROM EntityDefinition WHERE IsCustomizable=True AND Label IN " + select_string)[
+    #                                       'records'])
 else:
     if len(bc.ignore_list)!=0: #Only do this if there is something to ignore
         ignore_string = bf.create_SQL_query_string_from_list(bc.ignore_list) #create string of list of objects to ignore for SQL query
-        obj_info = pd.DataFrame(sf.query("SELECT " + bc.object_properties + " FROM EntityDefinition WHERE IsCustomizable=True AND Label NOT IN " + ignore_string)['records'])
+        obj_info = pd.DataFrame(sf.toolingexecute(
+            "query/?q=SELECT+" + bc.object_properties + "+from+EntityDefinition+Where+IsCustomizable=True+AND+Label+NOT+IN+" + ignore_string)[
+                                    'records'])
+        # obj_info = pd.DataFrame(sf.query("SELECT " + bc.object_properties + " FROM EntityDefinition WHERE IsCustomizable=True AND Label NOT IN " + ignore_string)['records'])
     else:
-        obj_info = pd.DataFrame(sf.query(
-            "SELECT "+bc.object_properties+" FROM EntityDefinition WHERE IsCustomizable=True")[
-                                                  'records'])
+        obj_info = pd.DataFrame(sf.toolingexecute(
+            "query/?q=SELECT+" + bc.object_properties + "+from+EntityDefinition+Where+IsCustomizable=True")[
+                                    'records'])
 field_dataframes_dict = bf.create_field_dataframes(obj_info, sf) #a dict with as keys the object labels and as values the dataframes of the objects' fields.
 
 if bc.print_fields:
     for obj_label in field_dataframes_dict:
         field_dataframes_dict[obj_label].to_csv('output/' + obj_label + '_fields.csv', index=False)  # save the file
+    obj_info.drop('attributes', inplace=True, axis=1)  # This column is useless
+    obj_info.to_csv('output/a_object_info_no_links.csv',index=False)
 
 if bc.print_links:
     #Initialize stat list
@@ -93,10 +98,14 @@ if bc.print_links:
         ## Check in the target object to what other objects it references
         #Get dataframe with field api names, labels & datatypes
         field_info = field_dataframes_dict[target_label]
+        if "DataType" not in field_info.columns:  # Catching empty dataframes
+            print("No data type for " + target_label)
+            continue
         for i,field_type in enumerate(field_info.loc[:,"DataType"]):
             link, link_type, obj_label = check_target_obj_links(field_type)
             if link:
                 link_list.append([target_label, obj_label, link_type, field_info.loc[i,"Label"], field_info.loc[i,"Description"]])
+
         links_to_other_objects = len(link_list)
 
         ## Check for other objects with references to the target object
@@ -108,6 +117,9 @@ if bc.print_links:
 
             #Get dataframe with field api names, labels & datatypes
             field_info = field_dataframes_dict[label]
+            if "DataType" not in field_info.columns: #Catching empty dataframes
+                print("No data type for "+label)
+                continue
             for i,field_type in enumerate(field_info.loc[:,"DataType"]):
                 # print(field_type)
                 link, link_type, target_obj_match = check_link_non_target_obj(field_type, target_label)
@@ -116,7 +128,6 @@ if bc.print_links:
 
         output = pd.DataFrame(link_list, columns=['Source obj', 'Target obj', "Link type", "Field name", "Field description"])
         links_from_other_objects = len(link_list) - links_to_other_objects
-        print(target_api_name)
         try:
             record_count = sf.query("SELECT COUNT() FROM "+target_api_name)['totalSize']
         except:
