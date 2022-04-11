@@ -3,24 +3,33 @@ import pandas as pd
 from simple_salesforce import Salesforce, SalesforceLogin, SFType
 import basic_functions as bf
 import basic_constants as bc
+import re
+a=re.match(".*,?User,.*","(User,Calendar,Group")
+b=re.match("User","User")
+if re.match(".*,?User,.*","(Pizza,Calendar,Group"):
+    print("yes")
+else:
+    print("no")
 
-## Connect with salesforce instance
-loginInfo = json.load(open(bc.login))
-username = loginInfo['username']
-password = loginInfo['password']
-security_token = loginInfo['security_token']
-domain = bc.domain
-session_id, instance = SalesforceLogin(username=username, password=password, security_token=security_token, domain=domain)
-sf = Salesforce(instance=instance, session_id=session_id)
 
-# obj_info = pd.DataFrame(sf.query(
-#         "SELECT name FROM Account")['records'])
-# obj_info = pd.DataFrame(sf.query(
-#         "SELECT Label, Description FROM EntityDefinition WHERE IsCustomizable=True")[
-#                                               'records'])
 
-obj_info = pd.DataFrame(sf.toolingexecute("query/?q=SELECT+Label,Description+from+EntityDefinition+Where+IsCustomizable=True")['records'])
-print("a")
+# ## Connect with salesforce instance
+# loginInfo = json.load(open(bc.login))
+# username = loginInfo['username']
+# password = loginInfo['password']
+# security_token = loginInfo['security_token']
+# domain = bc.domain
+# session_id, instance = SalesforceLogin(username=username, password=password, security_token=security_token, domain=domain)
+# sf = Salesforce(instance=instance, session_id=session_id)
+#
+# # obj_info = pd.DataFrame(sf.query(
+# #         "SELECT name FROM Account")['records'])
+# # obj_info = pd.DataFrame(sf.query(
+# #         "SELECT Label, Description FROM EntityDefinition WHERE IsCustomizable=True")[
+# #                                               'records'])
+#
+# obj_info = pd.DataFrame(sf.toolingexecute("query/?q=SELECT+Label,Description+from+EntityDefinition+Where+IsCustomizable=True")['records'])
+# print("a")
 
 
 

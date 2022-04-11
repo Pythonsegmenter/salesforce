@@ -3,22 +3,52 @@ import pandas as pd
 from simple_salesforce import Salesforce, SalesforceLogin, SFType
 import basic_functions as bf
 import basic_constants as bc
+import re
+
+def check_string_match(searched_string, pattern):
+    if pattern == searched_string: #Exact string
+        return True
+    elif re.match(".*,"+pattern+".*",searched_string): #comma before
+        return True
+    elif re.match(".*"+pattern+",.*",searched_string): #comma after
+        return True
+    return False
 
 def check_target_obj_links(data_type):
     """Returns link, link type, obj_label. Does this by checking the target object for look ups & master details"""
     if len(data_type)<6: #No look up or master detail, needed to check for index out of bounds
         return False, False, False
     elif data_type[0:7]=="Lookup(":
-        if (data_type[7:-1] not in bc.selection_list and bc.relate_by_selection): #ignore if not in ignore list and selection mode
-            return False, False, False
-        elif (data_type[7:-1] in bc.ignore_list and not bc.relate_by_selection): #ignore if in ignore list and in ignore mode
-            return False, False, False
+        if bc.relate_by_selection:
+            in_selection_list = False
+            for tar_label in bc.selection_list:
+                if check_string_match(data_type[7:-1],tar_label):
+                    in_selection_list=True
+            if not in_selection_list:
+                return False, False, False
+        elif not bc.relate_by_selection:
+            in_ignore_list=False
+            for tar_label in bc.ignore_list:
+                if check_string_match(data_type[7:-1],tar_label):
+                    in_ignore_list=True
+            if in_ignore_list:
+                return False, False, False
         return True, "Lookup", data_type[7:-1]
     elif data_type[0:14]=="Master-Detail(":
-        if (data_type[14:-1] not in bc.selection_list and bc.relate_by_selection): #ignore if not in ignore list and selection mode
-            return False, False, False
-        elif (data_type[14:-1] in bc.ignore_list and not bc.relate_by_selection): #ignore if in ignore list and in ignore mode
-            return False, False, False
+        if bc.relate_by_selection:
+            in_selection_list = False
+            for tar_label in bc.selection_list:
+                if check_string_match(data_type[14:-1],tar_label):
+                    in_selection_list=True
+            if not in_selection_list:
+                return False, False, False
+        elif not bc.relate_by_selection:
+            in_ignore_list=False
+            for tar_label in bc.ignore_list:
+                if check_string_match(data_type[14:-1],tar_label):
+                    in_ignore_list=True
+            if in_ignore_list:
+                return False, False, False
         return True, "Master-Detail", data_type[14:-1]
     #No look up or master detail but more then 6 characters
     return False, False, False
@@ -28,11 +58,11 @@ def check_link_non_target_obj(data_type, target_obj_label):
     if len(data_type)<6: #No look up or master detail, needed to check for index out of bounds
         return False, False, False
     elif data_type[0:7]=="Lookup(":
-        if data_type[7:-1]==target_obj_label:
+        if check_string_match(data_type[7:-1],target_obj_label):
             return True, "Lookup", True
         return True, "Lookup", False
     elif data_type[0:14]=="Master-Detail(":
-        if data_type[14:-1]==target_obj_label:
+        if check_string_match(data_type[14:-1],target_obj_label):
             return True, "Master-Detail", True
         return True, "Master-Detail", False
     #No look up or master detail but more then 6 characters
@@ -104,7 +134,7 @@ if bc.print_links:
         for i,field_type in enumerate(field_info.loc[:,"DataType"]):
             link, link_type, obj_label = check_target_obj_links(field_type)
             if link:
-                link_list.append([target_label, obj_label, link_type, field_info.loc[i,"Label"], field_info.loc[i,"Description"]])
+                link_list.append([target_label, obj_label, link_type, field_info.loc[i,"Label"], field_info.loc[i,"Description"],not field_info.loc[i,"IsNillable"]])
 
         links_to_other_objects = len(link_list)
 
@@ -124,9 +154,9 @@ if bc.print_links:
                 # print(field_type)
                 link, link_type, target_obj_match = check_link_non_target_obj(field_type, target_label)
                 if (link and target_obj_match):
-                    link_list.append([label, target_label, link_type, field_info.loc[i,"Label"], field_info.loc[i,"Description"]]) #Link list item: [source obj, target obj, link type, field name]
+                    link_list.append([label, target_label, link_type, field_info.loc[i,"Label"], field_info.loc[i,"Description"], not field_info.loc[i,"IsNillable"]]) #Link list item: [source obj, target obj, link type, field name]
 
-        output = pd.DataFrame(link_list, columns=['Source obj', 'Target obj', "Link type", "Field name", "Field description"])
+        output = pd.DataFrame(link_list, columns=['Source obj', 'Target obj', "Link type", "Field name", "Field description", "Is Required"])
         links_from_other_objects = len(link_list) - links_to_other_objects
         try:
             record_count = sf.query("SELECT COUNT() FROM "+target_api_name)['totalSize']
