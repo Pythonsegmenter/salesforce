@@ -70,6 +70,7 @@ field_dataframes_dict = bf.create_field_dataframes(obj_info, sf) #a dict with as
 
 if bc.print_fields:
     for obj_label in field_dataframes_dict:
+        field_dataframes_dict[obj_label].drop('attributes',inplace=True, axis=1) #This column is useless
         field_dataframes_dict[obj_label].to_csv('output/' + obj_label + '_fields.csv', index=False)  # save the file
     obj_info.drop('attributes', inplace=True, axis=1)  # This column is useless
     obj_info.to_csv('output/a_object_info_no_links.csv',index=False)

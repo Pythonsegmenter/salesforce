@@ -5,7 +5,7 @@ def create_field_dataframes(obj_api_name_and_label,sf):
     field_dataframes = dict()
     for obj_label in obj_api_name_and_label.loc[:,'Label']:
         field_dataframes[obj_label] = pd.DataFrame(sf.query(
-        "SELECT QualifiedApiName, Label, DataType, Description FROM FieldDefinition WHERE EntityDefinition.Label IN ('"+ obj_label +"')")[
+        "SELECT Label, QualifiedApiName, DataType, Description, (SELECT IsLayoutable FROM Particles) FROM FieldDefinition WHERE EntityDefinition.Label IN ('"+ obj_label +"')")[
                                 'records'])
     return field_dataframes
 
