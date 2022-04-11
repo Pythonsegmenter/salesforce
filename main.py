@@ -6,7 +6,7 @@ import basic_constants as bc
 import re
 
 def check_string_match(searched_string, pattern):
-    if pattern == searched_string: #Exact string
+    if pattern == searched_string: #Exact strings
         return True
     elif re.match(".*,"+pattern+".*",searched_string): #comma before
         return True
