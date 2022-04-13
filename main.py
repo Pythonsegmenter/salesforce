@@ -78,23 +78,23 @@ session_id, instance = SalesforceLogin(username=username, password=password, sec
 sf = Salesforce(instance=instance, session_id=session_id)
 
 #Get dataframewith all object api names that are customizable (=present in obj manager) and present in the selection list or not present in the ignore list.
-
+api_ignore_string = bf.create_SQL_query_string_from_list(bc.api_ignore_list) #The list of objects with api names mentioned in here will always be ignored. (for objects with duplicate labels)
 if bc.relate_by_selection:
     select_string = bf.create_SQL_query_string_from_list(
         bc.selection_list)  # create string of list of objects to ignore for SQL query
-    obj_info = pd.DataFrame(sf.toolingexecute("query/?q=SELECT+"+bc.object_properties+"+from+EntityDefinition+Where+IsCustomizable=True+AND+Label+IN+"+select_string)['records'])
+    obj_info = pd.DataFrame(sf.toolingexecute("query/?q=SELECT+"+bc.object_properties+"+from+EntityDefinition+Where+IsCustomizable=True+AND+Label+IN+"+select_string+"+AND+QualifiedApiName+NOT+IN+"+api_ignore_string)['records'])
     # obj_info = pd.DataFrame(sf.query("SELECT "+bc.object_properties+" FROM EntityDefinition WHERE IsCustomizable=True AND Label IN " + select_string)[
     #                                       'records'])
 else:
     if len(bc.ignore_list)!=0: #Only do this if there is something to ignore
         ignore_string = bf.create_SQL_query_string_from_list(bc.ignore_list) #create string of list of objects to ignore for SQL query
         obj_info = pd.DataFrame(sf.toolingexecute(
-            "query/?q=SELECT+" + bc.object_properties + "+from+EntityDefinition+Where+IsCustomizable=True+AND+Label+NOT+IN+" + ignore_string)[
+            "query/?q=SELECT+" + bc.object_properties + "+from+EntityDefinition+Where+IsCustomizable=True+AND+Label+NOT+IN+" + ignore_string+"+AND+QualifiedApiName+NOT+IN+"+api_ignore_string)[
                                     'records'])
         # obj_info = pd.DataFrame(sf.query("SELECT " + bc.object_properties + " FROM EntityDefinition WHERE IsCustomizable=True AND Label NOT IN " + ignore_string)['records'])
     else:
         obj_info = pd.DataFrame(sf.toolingexecute(
-            "query/?q=SELECT+" + bc.object_properties + "+from+EntityDefinition+Where+IsCustomizable=True")[
+            "query/?q=SELECT+" + bc.object_properties + "+from+EntityDefinition+Where+IsCustomizable=True+AND+QualifiedApiName+NOT+IN+"+api_ignore_string)[
                                     'records'])
 field_dataframes_dict = bf.create_field_dataframes(obj_info, sf) #a dict with as keys the object labels and as values the dataframes of the objects' fields.
 
@@ -135,7 +135,7 @@ if bc.print_links:
         for i,field_type in enumerate(field_info.loc[:,"DataType"]):
             link, link_type, obj_label = check_target_obj_links(field_type)
             if link:
-                link_list.append([target_label, obj_label, link_type, field_info.loc[i,"Label"], field_info.loc[i,"Description"],not field_info.loc[i,"IsNillable"]])
+                link_list.append([target_label, obj_label, link_type, field_info.loc[i,"Label"], field_info.loc[i,"QualifiedApiName"], field_info.loc[i,"Description"],not field_info.loc[i,"IsNillable"]])
 
         links_to_other_objects = len(link_list)
 
@@ -155,9 +155,9 @@ if bc.print_links:
                 # print(field_type)
                 link, link_type, target_obj_match = check_link_non_target_obj(field_type, target_label)
                 if (link and target_obj_match):
-                    link_list.append([label, target_label, link_type, field_info.loc[i,"Label"], field_info.loc[i,"Description"], not field_info.loc[i,"IsNillable"]]) #Link list item: [source obj, target obj, link type, field name]
+                    link_list.append([label, target_label, link_type, field_info.loc[i,"Label"], field_info.loc[i,"QualifiedApiName"], field_info.loc[i,"Description"], not field_info.loc[i,"IsNillable"]]) #Link list item: [source obj, target obj, link type, field name]
 
-        output = pd.DataFrame(link_list, columns=['Source obj', 'Target obj', "Link type", "Field name", "Field description", "Is Required"])
+        output = pd.DataFrame(link_list, columns=['Source obj', 'Target obj', "Link type", "Field name", "Field API name", "Field description", "Is Required"])
         links_from_other_objects = len(link_list) - links_to_other_objects
         try:
             record_count = sf.query("SELECT COUNT() FROM "+target_api_name)['totalSize']
