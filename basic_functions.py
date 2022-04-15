@@ -17,6 +17,12 @@ def create_field_dataframes_api_names(obj_info, sf):
             "SELECT QualifiedApiName, Label, DataType, Description, IsNillable, (SELECT IsLayoutable FROM Particles) FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName IN ('" + obj_api_name + "')")))
     return field_dataframes
 
+def find_value_based_on_column_name_and_other_value(dataframe, known_column, known_value, unknown_column):
+    index_list = dataframe.index[dataframe[known_column] == known_value].tolist()
+    if len(index_list)!=1:
+        raise KeyError("More then one or less then one value was found for column "+known_column+" and value "+known_value)
+    return dataframe[unknown_column].iloc[index_list[0]]
+
 
 def convert_query(query):
     """Converts the query to remove the weird dict from isLayoutable to a boolean"""
