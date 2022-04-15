@@ -1,18 +1,12 @@
 import pandas as pd
 import os
+import basic_functions as bf
 import numpy as np
 
-#Get the original descriptions
-original_csv_files = os.listdir('original_descriptions')
-original_dataframes = dict()
-for file in original_csv_files:
-    original_dataframes[file] = pd.read_csv('original_descriptions/'+file)
 
-#Get the new descriptions
-new_csv_files = os.listdir('new_descriptions')
-new_dataframes = dict()
-for file in new_csv_files:
-    new_dataframes[file] = pd.read_csv('new_descriptions/'+file)
+
+original_dataframes = bf.convert_csv_files_to_dataframes_dict('original_descriptions')
+new_dataframes = bf.convert_csv_files_to_dataframes_dict('new_descriptions')
 
 #Compare each file and add a column with if the description changed or not
 for file in original_dataframes.keys():
@@ -44,6 +38,6 @@ for file in original_dataframes.keys():
 
 
 
-print("a")
+print("Done")
 
 #df = pd.read_csv('data.csv')
