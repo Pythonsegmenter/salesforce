@@ -100,8 +100,16 @@ field_dataframes_dict = bf.create_field_dataframes(obj_info, sf) #a dict with as
 
 if bc.print_fields:
     for obj_label in field_dataframes_dict:
-        field_dataframes_dict[obj_label].drop('attributes',inplace=True, axis=1) #This column is useless
-        field_dataframes_dict[obj_label].to_csv('output/' + obj_label + '_fields.csv', index=False)  # save the file
+        try:
+            field_dataframes_dict[obj_label].drop('attributes',inplace=True, axis=1) #This column is useless
+        except KeyError:
+            print("This object "+obj_label+" has no attributes.")
+        if obj_label.find("/")!=-1: #Avoid annoying dash
+            annoying_index = obj_label.find("/")
+            new_obj_label = obj_label[0:annoying_index]+" per "+obj_label[annoying_index+1:]
+            field_dataframes_dict[obj_label].to_csv('output/' + new_obj_label + '_fields.csv', index=False)  # save the file
+        else:
+            field_dataframes_dict[obj_label].to_csv('output/' + obj_label + '_fields.csv', index=False)  # save the file
     obj_info.drop('attributes', inplace=True, axis=1)  # This column is useless
     obj_info.to_csv('output/a_object_info_no_links.csv',index=False)
 

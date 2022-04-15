@@ -34,8 +34,6 @@ for file in original_dataframes.keys():
             continue
 
         #Compare the values
-        print(new_description_row["Description"].iloc[0])
-        print(type(new_description_row["Description"].iloc[0]))
         if (old_description_row["Description"].iloc[0]!=new_description_row["Description"].iloc[0]) and (type(old_description_row["Description"].iloc[0])==str or type(new_description_row["Description"].iloc[0])==str): #string type check needed because stupid nan types are never equal. So at least one of the two must also be a string.
             list_with_changed_descriptions.append([old_description_row["Label"].iloc[0],api_name,old_description_row["Description"].iloc[0],new_description_row["Description"].iloc[0]])
 
