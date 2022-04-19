@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+import sys
 
 def create_field_dataframes(obj_info, sf):
     field_dataframes = dict()
@@ -14,7 +15,10 @@ def create_field_dataframes_api_names(obj_info, sf):
     field_dataframes = dict()
     for obj_api_name in obj_info.loc[:, 'QualifiedApiName']:
         field_dataframes[obj_api_name] = pd.DataFrame(convert_query(sf.query(
-            "SELECT QualifiedApiName, Label, DataType, Description, IsNillable, (SELECT IsLayoutable FROM Particles) FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName IN ('" + obj_api_name + "')")))
+            "SELECT QualifiedApiName, Label, DataType, Description, IsNillable, (SELECT IsLayoutable, InlineHelpText FROM Particles) FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName IN ('" + obj_api_name + "')")))
+        # test = sf.toolingexecute(
+        #     "query/?q=SELECT+inlineHelpText+from+FieldDefinition+Where+EntityDefinition.QualifiedApiName+IN+('Account')")[
+        #     'records']
     return field_dataframes
 
 def find_value_based_on_column_name_and_other_value(dataframe, known_column, known_value, unknown_column):
@@ -28,9 +32,12 @@ def convert_query(query):
     """Converts the query to remove the weird dict from isLayoutable to a boolean"""
     for rec in query['records']:
         if (rec['Particles'] is not None):
+
             rec['IsLayoutable'] =rec['Particles']['records'][0]['IsLayoutable']
+            rec['InlineHelpText'] =rec['Particles']['records'][0]['InlineHelpText']
         else:
             rec['IsLayoutable']=False
+            rec['InlineHelpText']=None
         rec.pop('Particles', None) #Remove the particles part.
     return query['records']
 
@@ -63,3 +70,33 @@ def convert_csv_files_to_dataframes_dict(csv_files_path):
     for file in csv_files:
         dataframes[file] = pd.read_csv(csv_files_path + '/'+file)
     return dataframes
+
+def query_yes_no(question, default=None):
+    """Ask a yes/no question via raw_input() and return their answer.
+
+    "question" is a string that is presented to the user.
+    "default" is the presumed answer if the user just hits <Enter>.
+            It must be "yes" (the default), "no" or None (meaning
+            an answer is required of the user).
+
+    The "answer" return value is True for "yes" or False for "no".
+    """
+    valid = {"yes": True, "y": True, "ye": True, "no": False, "n": False}
+    if default is None:
+        prompt = " [y/n] "
+    elif default == "yes":
+        prompt = " [Y/n] "
+    elif default == "no":
+        prompt = " [y/N] "
+    else:
+        raise ValueError("invalid default answer: '%s'" % default)
+
+    while True:
+        sys.stdout.write(question + prompt)
+        choice = input().lower()
+        if default is not None and choice == "":
+            return valid[default]
+        elif choice in valid:
+            return valid[choice]
+        else:
+            sys.stdout.write("Please respond with 'yes' or 'no' " "(or 'y' or 'n').\n")

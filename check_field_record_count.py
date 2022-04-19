@@ -25,14 +25,15 @@ def get_field_record_count(field_data_frame, obj_api_name, print_field_record_da
         is_layoutable = bf.find_value_based_on_column_name_and_other_value(field_data_frame, "QualifiedApiName", field, "IsLayoutable")
         data_type = bf.find_value_based_on_column_name_and_other_value(field_data_frame, "QualifiedApiName", field, "DataType")
         description = bf.find_value_based_on_column_name_and_other_value(field_data_frame, "QualifiedApiName", field, "Description")
+        help_text = bf.find_value_based_on_column_name_and_other_value(field_data_frame, "QualifiedApiName", field, "InlineHelpText")
 
         if is_layoutable: #We don't want these fields that are not usable in layouts.
             record_counter = 0
             for record in field_record_data.loc[:,field]: #iterate over records in fields
                 if record!=None:
                     record_counter+=1
-            field_record_count_list.append([field_label,field,data_type, description,record_counter,len(field_record_data.loc[:field])])
-    field_record_count_df = pd.DataFrame(field_record_count_list,columns=['Field label', 'Field Api Name','Data Type','Description','Records with field filled in', 'Total records'])
+            field_record_count_list.append([field_label,field,data_type, description, help_text, record_counter,len(field_record_data.loc[:field])])
+    field_record_count_df = pd.DataFrame(field_record_count_list,columns=['Label', 'QualifiedApiName','Data Type','Description', 'InlineHelpText', 'Records with field filled in', 'Total records'])
 
     return field_record_count_df
 
@@ -61,7 +62,7 @@ for obj_api_name in field_data_frames.keys():
     field_record_count = get_field_record_count(field_data_frame, obj_api_name, print_field_record_data=bc.print_records)
 
     #print the result
-    field_record_count.to_csv('output/'+obj_api_name+'_field_record_count.csv',index=False)
+    field_record_count.to_csv('output/'+obj_api_name+'_field_record_adaptation.csv',index=False)
 
 
 print('Done')

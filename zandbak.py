@@ -6,23 +6,16 @@ import basic_constants as bc
 import re
 
 
-## Connect with salesforce instance
-loginInfo = json.load(open(bc.login))
-username = loginInfo['username']
-password = loginInfo['password']
-security_token = loginInfo['security_token']
-domain = bc.domain
-session_id, instance = SalesforceLogin(username=username, password=password, security_token=security_token, domain=domain)
-sf = Salesforce(instance=instance, session_id=session_id)
+a = "Account_field_record_count.csv"
+print(a.find("_field"))
+print(a[0:7])
 
-mdapi = sf.mdapi
-custom_object = mdapi.CustomObject.read("Account")
-custom_field = mdapi.CustomField(
-    fullName = "AccountNumber",
-    description = "Not used",
-    inlineHelpText = "Not used"
-)
-custom_object.fields = [custom_field]
+# ## Connect with salesforce instance
+# loginInfo = json.load(open(bc.login))
+# username = loginInfo['username']
+# password = loginInfo['password']
+# security_token = loginInfo['security_token']
+# domain = bc.domain
+# session_id, instance = SalesforceLogin(username=username, password=password, security_token=security_token, domain=domain)
+# sf = Salesforce(instance=instance, session_id=session_id)
 
-mdapi.CustomObject.update(custom_object)
-print("Done")
