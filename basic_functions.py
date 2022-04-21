@@ -14,12 +14,12 @@ def create_field_dataframes_api_names(obj_info, sf):
     """Same as other function but keys for dict are api names"""
     field_dataframes = dict()
     for obj_api_name in obj_info.loc[:, 'QualifiedApiName']:
-        field_dataframes[obj_api_name] = pd.DataFrame(convert_query(sf.query(
-            "SELECT QualifiedApiName, Label, DataType, Description, IsNillable, (SELECT IsLayoutable, InlineHelpText FROM Particles) FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName IN ('" + obj_api_name + "')")))
-        # test = sf.toolingexecute(
-        #     "query/?q=SELECT+inlineHelpText+from+FieldDefinition+Where+EntityDefinition.QualifiedApiName+IN+('Account')")[
-        #     'records']
+        field_dataframes[obj_api_name] = perform_field_query(obj_api_name, sf)
     return field_dataframes
+
+def perform_field_query(obj_api_name, sf):
+    return pd.DataFrame(convert_query(sf.query(
+        "SELECT QualifiedApiName, Label, DataType, Description, IsNillable, (SELECT IsLayoutable, InlineHelpText FROM Particles) FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName IN ('" + obj_api_name + "')")))
 
 def find_value_based_on_column_name_and_other_value(dataframe, known_column, known_value, unknown_column):
     index_list = dataframe.index[dataframe[known_column] == known_value].tolist()
