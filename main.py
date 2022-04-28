@@ -125,20 +125,17 @@ if bc.print_links:
         #get target API name
         target_api_name = obj_info.loc[index, "QualifiedApiName"]
 
-        #For testing purposes
-        if bc.stop_limit == stop_index:
-            break
-        stop_index += 1
-
         #Initialize link list
         link_list = [] #details links
 
+        print(target_label)
 
         ## Check in the target object to what other objects it references
         #Get dataframe with field api names, labels & datatypes
         field_info = field_dataframes_dict[target_label]
         if "DataType" not in field_info.columns:  # Catching empty dataframes
             print("No data type for " + target_label)
+            stat_list.append(["Error, see code", "Error, see code", "Error, see code", "Error, see code"])
             continue
         for i,field_type in enumerate(field_info.loc[:,"DataType"]):
             link, link_type, obj_label = check_target_obj_links(field_type)
@@ -157,13 +154,16 @@ if bc.print_links:
             #Get dataframe with field api names, labels & datatypes
             field_info = field_dataframes_dict[label]
             if "DataType" not in field_info.columns: #Catching empty dataframes
-                print("No data type for "+label)
+                #print("No data type for "+label)
                 continue
             for i,field_type in enumerate(field_info.loc[:,"DataType"]):
                 # print(field_type)
                 link, link_type, target_obj_match = check_link_non_target_obj(field_type, target_label)
                 if (link and target_obj_match):
                     link_list.append([label, target_label, link_type, field_info.loc[i,"Label"], field_info.loc[i,"QualifiedApiName"], field_info.loc[i,"Description"], not field_info.loc[i,"IsNillable"]]) #Link list item: [source obj, target obj, link type, field name]
+
+        if target_label == "Address":
+            print("stooop")
 
         output = pd.DataFrame(link_list, columns=['Source obj', 'Target obj', "Link type", "Field name", "Field API name", "Field description", "Is Required"])
         links_from_other_objects = len(link_list) - links_to_other_objects

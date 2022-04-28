@@ -44,7 +44,7 @@ sf = Salesforce(instance=instance, session_id=session_id)
 
 mdapi = sf.mdapi
 
-dataframe_dict = bf.convert_csv_files_to_dataframes_dict('write_descriptions')
+dataframe_dict = bf.convert_files_to_dataframes_dict('write_descriptions')
 for dataframe_key in dataframe_dict:
 
     # read the descriptions of all fields

@@ -5,8 +5,8 @@ import numpy as np
 
 
 
-original_dataframes = bf.convert_csv_files_to_dataframes_dict('original_descriptions')
-new_dataframes = bf.convert_csv_files_to_dataframes_dict('new_descriptions')
+original_dataframes = bf.convert_files_to_dataframes_dict('original_descriptions')
+new_dataframes = bf.convert_files_to_dataframes_dict('new_descriptions')
 
 #Compare each file and add a column with if the description changed or not
 for file in original_dataframes.keys():

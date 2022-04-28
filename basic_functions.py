@@ -7,7 +7,7 @@ def create_field_dataframes(obj_info, sf):
     for index, obj_label in enumerate(obj_info.loc[:, 'Label']):
         obj_api_name = obj_info.loc[index, "QualifiedApiName"]
         field_dataframes[obj_label] = pd.DataFrame(convert_query(sf.query(
-            "SELECT QualifiedApiName, Label, DataType, Description, IsNillable, (SELECT IsLayoutable FROM Particles) FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName IN ('" + obj_api_name + "')")))
+            "SELECT QualifiedApiName, Label, DataType, Description, IsNillable, (SELECT IsLayoutable, InlineHelpText FROM Particles) FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName IN ('" + obj_api_name + "')")))
     return field_dataframes
 
 def create_field_dataframes_api_names(obj_info, sf):
@@ -21,11 +21,16 @@ def perform_field_query(obj_api_name, sf):
     return pd.DataFrame(convert_query(sf.query(
         "SELECT QualifiedApiName, Label, DataType, Description, IsNillable, (SELECT IsLayoutable, InlineHelpText FROM Particles) FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName IN ('" + obj_api_name + "')")))
 
-def find_value_based_on_column_name_and_other_value(dataframe, known_column, known_value, unknown_column):
+def find_value_based_on_column_name_and_other_value(dataframe, known_column, known_value, unknown_column, error_if_not_single_value_found = True):
     index_list = dataframe.index[dataframe[known_column] == known_value].tolist()
-    if len(index_list)!=1:
+    if len(index_list) == 1:
+        return dataframe[unknown_column].iloc[index_list[0]]
+    if error_if_not_single_value_found:
         raise KeyError("More then one or less then one value was found for column "+known_column+" and value "+known_value)
-    return dataframe[unknown_column].iloc[index_list[0]]
+    else:
+        return False
+
+
 
 
 def convert_query(query):
@@ -63,12 +68,19 @@ def create_SQL_query_string_from_list(item_list, parentheses_and_quotation_marks
         result_string = result_string[0:-2]
     return result_string
 
-def convert_csv_files_to_dataframes_dict(csv_files_path):
+
+
+def convert_files_to_dataframes_dict(files_path):
     #Get the original descriptions
-    csv_files = os.listdir(csv_files_path)
+    files_to_read = os.listdir(files_path)
     dataframes = dict()
-    for file in csv_files:
-        dataframes[file] = pd.read_csv(csv_files_path + '/'+file)
+    for file in files_to_read:
+        if file[-1]=="v":
+            dataframes[file] = pd.read_csv(files_path + '/' + file)
+        elif file[-1]=="x":
+            dataframes[file] = pd.read_excel(files_path + '/' + file)
+        else:
+            raise KeyError("This file is not known "+file)
     return dataframes
 
 def query_yes_no(question, default=None):

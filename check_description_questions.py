@@ -2,7 +2,7 @@ import basic_functions as bf
 import pandas as pd
 
 
-dataframes = bf.convert_csv_files_to_dataframes_dict('questioned_descriptions')
+dataframes = bf.convert_files_to_dataframes_dict('questioned_descriptions')
 
 #Compare each file and add a column with if the description changed or not
 for file in dataframes.keys():
